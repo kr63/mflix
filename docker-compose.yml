@@ -5,6 +5,9 @@ services:
   mongo:
     image: mongo:4.1.9
     restart: always
+    volumes:
+      - ../my-volume:/data/db
+      - ./data:/mnt
     ports:
       - 27017:27017
     environment:
