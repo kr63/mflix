@@ -26,94 +26,93 @@ import static org.junit.Assert.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class UserTest extends TicketTest {
 
-  private UserDao dao;
+    private static String email = "gryffindor@hogwarts.edu";
+    @Autowired
+    MongoClient mongoClient;
+    @Value("${spring.mongodb.database}")
+    String databaseName;
+    private UserDao dao;
+    private User testUser;
+    private String jwt;
 
-  private static String email = "gryffindor@hogwarts.edu";
-  private User testUser;
-  private String jwt;
-  @Autowired MongoClient mongoClient;
+    @Before
+    public void setup() {
 
-  @Value("${spring.mongodb.database}")
-  String databaseName;
+        this.dao = new UserDao(mongoClient, databaseName);
+        this.testUser = new User();
+        this.testUser.setName("Hermione Granger");
+        this.testUser.setEmail(email);
+        this.testUser.setHashedpw("somehashedpw");
+        this.jwt = "somemagicjwt";
+        mongoClient
+                .getDatabase("mflix")
+                .getCollection("users")
+                .deleteOne(new Document("email", "log@out.com"));
+    }
 
-  @Before
-  public void setup() {
+    @After
+    public void tearDownClass() {
+        MongoDatabase db = mongoClient.getDatabase("mflix");
+        db.getCollection("users").deleteMany(new Document("email", email));
+        db.getCollection("users").deleteMany(new Document("email", "log@out.com"));
+        db.getCollection("sessions").deleteMany(new Document("user_id", "log@out" +
+                ".com"));
+    }
 
-    this.dao = new UserDao(mongoClient, databaseName);
-    this.testUser = new User();
-    this.testUser.setName("Hermione Granger");
-    this.testUser.setEmail(email);
-    this.testUser.setHashedpw("somehashedpw");
-    this.jwt = "somemagicjwt";
-    mongoClient
-        .getDatabase("mflix")
-        .getCollection("users")
-        .deleteOne(new Document("email", "log@out.com"));
-  }
+    @Test
+    public void testRegisterUser() {
 
-  @After
-  public void tearDownClass() {
-    MongoDatabase db = mongoClient.getDatabase("mflix");
-    db.getCollection("users").deleteMany(new Document("email", email));
-    db.getCollection("users").deleteMany(new Document("email", "log@out.com"));
-    db.getCollection("sessions").deleteMany(new Document("user_id", "log@out" +
-            ".com"));
-  }
+        assertTrue(
+                "Should have correctly created the user - check your write user method",
+                dao.addUser(testUser)); // add string explanation
 
-  @Test
-  public void testRegisterUser() {
+        User user = dao.getUser(testUser.getEmail());
+        Assert.assertEquals(testUser.getName(), user.getName());
+        Assert.assertEquals(testUser.getEmail(), user.getEmail());
+        Assert.assertEquals(testUser.getHashedpw(), user.getHashedpw());
+    }
 
-    assertTrue(
-        "Should have correctly created the user - check your write user method",
-        dao.addUser(testUser)); // add string explanation
+    @Test
+    public void testLogin() {
+        dao.addUser(testUser);
+        boolean result = dao.createUserSession(testUser.getEmail(), jwt);
+        assertTrue("Should be able to create user sesssion.", result);
+        Session session = dao.getUserSession(testUser.getEmail());
+        assertEquals(
+                "The user email needs to match the `session` user_id field",
+                testUser.getEmail(),
+                session.getUserId());
+        assertEquals("jwt key needs to match the session `jwt`", jwt, session.getJwt());
+    }
 
-    User user = dao.getUser(testUser.getEmail());
-    Assert.assertEquals(testUser.getName(), user.getName());
-    Assert.assertEquals(testUser.getEmail(), user.getEmail());
-    Assert.assertEquals(testUser.getHashedpw(), user.getHashedpw());
-  }
+    @Test
+    public void testLogout() {
+        String email = "log@out.com";
+        Document logOutUser = new Document("email", email);
+        mongoClient.getDatabase("mflix").getCollection("users").insertOne(logOutUser);
+        Document logOutUserSession = new Document("user_id", email);
+        mongoClient.getDatabase("mflix").getCollection("sessions").insertOne(logOutUserSession);
 
-  @Test
-  public void testLogin() {
-    dao.addUser(testUser);
-    boolean result = dao.createUserSession(testUser.getEmail(), jwt);
-    assertTrue("Should be able to create user sesssion.", result);
-    Session session = dao.getUserSession(testUser.getEmail());
-    assertEquals(
-        "The user email needs to match the `session` user_id field",
-        testUser.getEmail(),
-        session.getUserId());
-    assertEquals("jwt key needs to match the session `jwt`", jwt, session.getJwt());
-  }
+        assertTrue(
+                "Should have deleted user from sessions collection - check your logout method",
+                dao.deleteUser(email));
+        Session session = dao.getUserSession(email);
+        assertNull("All sessions for user should have been deleted after logout", session);
+    }
 
-  @Test
-  public void testLogout() {
-    String email = "log@out.com";
-    Document logOutUser = new Document("email", email);
-    mongoClient.getDatabase("mflix").getCollection("users").insertOne(logOutUser);
-    Document logOutUserSession = new Document("user_id", email);
-    mongoClient.getDatabase("mflix").getCollection("sessions").insertOne(logOutUserSession);
+    @Test
+    public void testDeleteUser() {
+        dao.addUser(testUser);
+        assertTrue(
+                "You should be able to delete correctly the testDb user. Check your delete filter",
+                dao.deleteUser(testUser.getEmail()));
 
-    assertTrue(
-        "Should have deleted user from sessions collection - check your logout method",
-        dao.deleteUser(email));
-    Session session = dao.getUserSession(email);
-    assertNull("All sessions for user should have been deleted after logout", session);
-  }
+        assertNull(
+                "Should not find any sessions after deleting a user. deleteUser() method needs to remove the user sessions data!",
+                dao.getUserSession(testUser.getEmail()));
 
-  @Test
-  public void testDeleteUser() {
-    dao.addUser(testUser);
-    assertTrue(
-        "You should be able to delete correctly the testDb user. Check your delete filter",
-        dao.deleteUser(testUser.getEmail()));
-
-    assertNull(
-        "Should not find any sessions after deleting a user. deleteUser() method needs to remove the user sessions data!",
-        dao.getUserSession(testUser.getEmail()));
-
-    assertNull(
-        "User data should not be found after user been deleted. Make sure you delete data from users collection",
-        dao.getUser(testUser.getEmail()));
-  }
+        assertNull(
+                "User data should not be found after user been deleted. Make sure you delete data from users collection",
+                dao.getUser(testUser.getEmail()));
+    }
 }

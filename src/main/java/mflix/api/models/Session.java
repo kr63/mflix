@@ -4,28 +4,28 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 
 public class Session {
 
-  @BsonProperty(value = "user_id")
-  private String userId;
+    @BsonProperty(value = "user_id")
+    private String userId;
 
-  private String jwt;
+    private String jwt;
 
-  public Session() {
-    super();
-  }
+    public Session() {
+        super();
+    }
 
-  public String getUserId() {
-    return userId;
-  }
+    public String getUserId() {
+        return userId;
+    }
 
-  public void setUserId(String userId) {
-    this.userId = userId;
-  }
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
-  public String getJwt() {
-    return jwt;
-  }
+    public String getJwt() {
+        return jwt;
+    }
 
-  public void setJwt(String jwt) {
-    this.jwt = jwt;
-  }
+    public void setJwt(String jwt) {
+        this.jwt = jwt;
+    }
 }
