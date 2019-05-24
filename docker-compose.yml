@@ -4,7 +4,7 @@ services:
 
   mongo:
     image: mongo:4.1.9
-    restart: always
+    restart: on-failure
     volumes:
       - ../my-volume:/data/db
       - ./data:/mnt
@@ -16,7 +16,7 @@ services:
 
   mongo-express:
     image: mongo-express:0.49
-    restart: always
+    restart: on-failure
     ports:
       - 8081:8081
     environment:
