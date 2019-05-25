@@ -5,7 +5,6 @@ import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import mflix.api.models.Session;
 import mflix.api.models.User;
@@ -22,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Updates.set;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -58,7 +58,6 @@ public class UserDao extends AbstractMFlixDao {
         usersCollection.withWriteConcern(WriteConcern.MAJORITY).insertOne(user);
         return true;
 
-        //TODO > Ticket: Durable Writes -  you might want to use a more durable write concern here!
         //TODO > Ticket: Handling Errors - make sure to only add new users
         // and not users that already exist.
     }
@@ -72,7 +71,7 @@ public class UserDao extends AbstractMFlixDao {
      */
     public boolean createUserSession(String userId, String jwt) {
         Bson filter = new Document("user_id", userId);
-        Bson update = Updates.set("jwt", jwt);
+        Bson update = set("jwt", jwt);
         UpdateOptions options = new UpdateOptions().upsert(true);
         sessionsCollection.updateOne(filter, update, options);
         return true;
@@ -117,7 +116,6 @@ public class UserDao extends AbstractMFlixDao {
         usersCollection.deleteMany(eq("email", email));
         return true;
 
-        //TODO> Ticket: User Management - implement the delete user method
         //TODO > Ticket: Handling Errors - make this method more robust by
         // handling potential exceptions.
     }
@@ -131,10 +129,15 @@ public class UserDao extends AbstractMFlixDao {
      * @return User object that just been updated.
      */
     public boolean updateUserPreferences(String email, Map<String, ?> userPreferences) {
-        //TODO> Ticket: User Preferences - implement the method that allows for user preferences to
-        // be updated.
+        if (userPreferences != null) {
+            Bson filter = eq("email", email);
+            usersCollection.updateOne(filter, set("preferences", userPreferences));
+        } else {
+            throw new IncorrectDaoOperation("User preferences must be set");
+        }
+        return true;
+
         //TODO > Ticket: Handling Errors - make this method more robust by
         // handling potential exceptions when updating an entry.
-        return false;
     }
 }
