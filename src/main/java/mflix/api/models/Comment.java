@@ -11,93 +11,95 @@ import java.util.Date;
 
 public class Comment {
 
-  @JsonProperty("_id")
-  @BsonIgnore
-  private String id;
+    @JsonProperty("_id")
+    @BsonIgnore
+    private String id;
 
-  @BsonId @JsonIgnore private ObjectId oid;
+    @BsonId
+    @JsonIgnore
+    private ObjectId oid;
 
-  private String text;
+    private String text;
 
-  private Date date;
+    private Date date;
 
-  private String email;
+    private String email;
 
-  private String name;
+    private String name;
 
-  @JsonProperty("movie_id")
-  @BsonIgnore
-  private String movieId;
+    @JsonProperty("movie_id")
+    @BsonIgnore
+    private String movieId;
 
-  @BsonProperty("movie_id")
-  @JsonIgnore
-  private ObjectId movieObjectId;
+    @BsonProperty("movie_id")
+    @JsonIgnore
+    private ObjectId movieObjectId;
 
-  public String getId() {
-    return id;
-  }
+    public String getId() {
+        return id;
+    }
 
-  public void setId(String id) {
-    this.id = id;
-    this.oid = new ObjectId(id);
-  }
+    public void setId(String id) {
+        this.id = id;
+        this.oid = new ObjectId(id);
+    }
 
-  public String getText() {
-    return text;
-  }
+    public String getText() {
+        return text;
+    }
 
-  public void setText(String text) {
-    this.text = text;
-  }
+    public void setText(String text) {
+        this.text = text;
+    }
 
-  public Date getDate() {
-    return date;
-  }
+    public Date getDate() {
+        return date;
+    }
 
-  public void setDate(Date date) {
-    this.date = date;
-  }
+    public void setDate(Date date) {
+        this.date = date;
+    }
 
-  public String getEmail() {
-    return email;
-  }
+    public String getEmail() {
+        return email;
+    }
 
-  public void setEmail(String email) {
-    this.email = email;
-  }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-  public String getMovieId() {
-    return movieId;
-  }
+    public String getMovieId() {
+        return movieId;
+    }
 
-  public void setMovieId(String movieId) {
-    this.movieId = movieId;
-    this.movieObjectId = new ObjectId(movieId);
-  }
+    public void setMovieId(String movieId) {
+        this.movieId = movieId;
+        this.movieObjectId = new ObjectId(movieId);
+    }
 
-  public String getName() {
-    return name;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  public void setOid(ObjectId oid) {
-    this.oid = oid;
-    this.id = oid.toHexString();
-  }
+    public ObjectId getOid() {
+        return oid;
+    }
 
-  public ObjectId getOid() {
-    return oid;
-  }
+    public void setOid(ObjectId oid) {
+        this.oid = oid;
+        this.id = oid.toHexString();
+    }
 
-  public ObjectId getMovieObjectId() {
-    return movieObjectId;
-  }
+    public ObjectId getMovieObjectId() {
+        return movieObjectId;
+    }
 
-  public void setMovieObjectId(ObjectId movieObjectId) {
-    this.movieObjectId = movieObjectId;
-    this.movieId = movieObjectId.toHexString();
-  }
+    public void setMovieObjectId(ObjectId movieObjectId) {
+        this.movieObjectId = movieObjectId;
+        this.movieId = movieObjectId.toHexString();
+    }
 }
