@@ -26,71 +26,70 @@ import java.util.Date;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class DeleteCommentTest extends TicketTest {
 
-  private CommentDao dao;
-  @Autowired MongoClient mongoClient;
+    @Autowired
+    MongoClient mongoClient;
+    @Value("${spring.mongodb.database}")
+    String databaseName;
+    private CommentDao dao;
+    private String commentId;
 
-  @Value("${spring.mongodb.database}")
-  String databaseName;
+    private String ownerEmail = "owner@email.com";
 
-  private String commentId;
+    @Before
+    public void setUp() {
 
-  private String ownerEmail = "owner@email.com";
+        this.dao = new CommentDao(mongoClient, databaseName);
 
-  @Before
-  public void setUp() {
+        Document commentDoc = new Document("email", ownerEmail);
+        commentDoc.append("date", new Date());
+        commentDoc.append("text", "some text");
+        commentDoc.append("name", "user name");
 
-    this.dao = new CommentDao(mongoClient, databaseName);
+        this.mongoClient.getDatabase("mflix").getCollection("comments").insertOne(commentDoc);
 
-    Document commentDoc = new Document("email", ownerEmail);
-    commentDoc.append("date", new Date());
-    commentDoc.append("text", "some text");
-    commentDoc.append("name", "user name");
+        commentId = commentDoc.getObjectId("_id").toHexString();
+    }
 
-    this.mongoClient.getDatabase("mflix").getCollection("comments").insertOne(commentDoc);
+    @Test
+    public void testDeleteOfOwnedComment() {
 
-    commentId = commentDoc.getObjectId("_id").toHexString();
-  }
+        Assert.assertTrue(
+                "Should be able to delete owns comments: Check your deleteComment() method",
+                dao.deleteComment(commentId, ownerEmail));
+    }
 
-  @Test
-  public void testDeleteOfOwnedComment() {
+    @Test
+    public void testDeleteNotOwnedComment() {
+        Assert.assertFalse(
+                "Should not be able to delete not matching owner comment: Check your delete filter on deleteComment() method",
+                dao.deleteComment(commentId, "some@email.com"));
+    }
 
-    Assert.assertTrue(
-        "Should be able to delete owns comments: Check your deleteComment() method",
-        dao.deleteComment(commentId, ownerEmail));
-  }
+    @Test
+    public void testDeleteNonExistingComment() {
+        String nonExistingCommentId = new ObjectId().toHexString();
+        Assert.assertFalse(
+                "Deleting non-existing comment should return " + "false: Check your deleteComment() method",
+                dao.deleteComment(nonExistingCommentId, ""));
+    }
 
-  @Test
-  public void testDeleteNotOwnedComment() {
-    Assert.assertFalse(
-        "Should not be able to delete not matching owner comment: Check your delete filter on deleteComment() method",
-        dao.deleteComment(commentId, "some@email.com"));
-  }
-
-  @Test
-  public void testDeleteNonExistingComment() {
-    String nonExistingCommentId = new ObjectId().toHexString();
-    Assert.assertFalse(
-        "Deleting non-existing comment should return " + "false: Check your deleteComment() method",
-        dao.deleteComment(nonExistingCommentId, ""));
-  }
-
-  @Test
-  public void testDeleteIncorrectCommentId(){
-    String nonExistingCommentId = new ObjectId().toHexString();
-    Assert.assertFalse(
-            "Deleting comment where _id value does not exist should not return true",
-            dao.deleteComment(nonExistingCommentId, ownerEmail));
-  }
+    @Test
+    public void testDeleteIncorrectCommentId() {
+        String nonExistingCommentId = new ObjectId().toHexString();
+        Assert.assertFalse(
+                "Deleting comment where _id value does not exist should not return true",
+                dao.deleteComment(nonExistingCommentId, ownerEmail));
+    }
 
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testDeleteInvalidCommentId() {
-    dao.deleteComment("", ownerEmail);
-  }
+    @Test(expected = IllegalArgumentException.class)
+    public void testDeleteInvalidCommentId() {
+        dao.deleteComment("", ownerEmail);
+    }
 
-  @After
-  public void tearDown() {
-    Bson deleteFiler = Filters.eq("_id", new ObjectId(this.commentId));
-    this.mongoClient.getDatabase("mflix").getCollection("comments").deleteOne(deleteFiler);
-  }
+    @After
+    public void tearDown() {
+        Bson deleteFiler = Filters.eq("_id", new ObjectId(this.commentId));
+        this.mongoClient.getDatabase("mflix").getCollection("comments").deleteOne(deleteFiler);
+    }
 }
