@@ -27,133 +27,132 @@ import java.util.Date;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class UpdateCreateCommentTest extends TicketTest {
 
-  private CommentDao dao;
-  @Autowired MongoClient mongoClient;
+    @Autowired
+    MongoClient mongoClient;
+    @Value("${spring.mongodb.database}")
+    String databaseName;
+    private CommentDao dao;
+    private String notValidEmail;
+    private String validEmail;
 
-  @Value("${spring.mongodb.database}")
-  String databaseName;
+    private String fakeCommentId;
 
-  private String notValidEmail;
-  private String validEmail;
+    @Before
+    public void setUp() {
+        this.dao = new CommentDao(mongoClient, databaseName);
 
-  private String fakeCommentId;
+        this.notValidEmail = "hello@notvalid.io";
+        this.validEmail = "hello@valid.io";
+        this.fakeCommentId = this.dao.generateObjectId().toHexString();
+        removeFakeComment(this.fakeCommentId);
+    }
 
-  @Before
-  public void setUp() {
-    this.dao = new CommentDao(mongoClient, databaseName);
+    @After
+    public void tearDown() {
+        removeFakeComment(this.fakeCommentId);
+    }
 
-    this.notValidEmail = "hello@notvalid.io";
-    this.validEmail = "hello@valid.io";
-    this.fakeCommentId = this.dao.generateObjectId().toHexString();
-    removeFakeComment(this.fakeCommentId);
-  }
+    private void removeFakeComment(String id) {
+        commentsCollection().deleteOne(Filters.eq("_id", id));
+    }
 
-  @After
-  public void tearDown() {
-    removeFakeComment(this.fakeCommentId);
-  }
+    private Comment fakeCommentWithId() {
+        Comment comment = fakeCommentNoId();
+        comment.setId(this.fakeCommentId);
+        return comment;
+    }
 
-  private void removeFakeComment(String id) {
-    commentsCollection().deleteOne(Filters.eq("_id", id));
-  }
+    private Comment fakeCommentNoId() {
+        String movieId = "573a1394f29313caabce0899";
+        Comment comment = new Comment();
+        comment.setEmail(validEmail);
+        comment.setText(randomText(32));
+        comment.setDate(new Date());
+        comment.setName("some name");
+        comment.setMovieId(movieId);
+        return comment;
+    }
 
-  private Comment fakeCommentWithId() {
-    Comment comment = fakeCommentNoId();
-    comment.setId(this.fakeCommentId);
-    return comment;
-  }
+    private MongoCollection commentsCollection() {
+        return this.mongoClient.getDatabase("mflix").getCollection(CommentDao.COMMENT_COLLECTION);
+    }
 
-  private Comment fakeCommentNoId() {
-    String movieId = "573a1394f29313caabce0899";
-    Comment comment = new Comment();
-    comment.setEmail(validEmail);
-    comment.setText(randomText(32));
-    comment.setDate(new Date());
-    comment.setName("some name");
-    comment.setMovieId(movieId);
-    return comment;
-  }
+    @Test
+    public void testUserUpdatesOwnComments() {
+        Comment fakeComment = fakeCommentWithId();
+        dao.addComment(fakeComment);
+        String expectedCommentText = randomText(20);
 
-  private MongoCollection commentsCollection() {
-    return this.mongoClient.getDatabase("mflix").getCollection(CommentDao.COMMENT_COLLECTION);
-  }
+        Assert.assertTrue(
+                "Should be able to update his own comments. Check updateComment implementation",
+                dao.updateComment(fakeComment.getId(), expectedCommentText, validEmail));
 
-  @Test
-  public void testUserUpdatesOwnComments() {
-    Comment fakeComment = fakeCommentWithId();
-    dao.addComment(fakeComment);
-    String expectedCommentText = randomText(20);
+        Document actualComment =
+                (Document)
+                        commentsCollection()
+                                .find(new Document("_id", new ObjectId(fakeCommentId)))
+                                .first();
 
-    Assert.assertTrue(
-        "Should be able to update his own comments. Check updateComment implementation",
-        dao.updateComment(fakeComment.getId(), expectedCommentText, validEmail));
+        Assert.assertEquals(
+                "Comment text should match. Check updateComment implementation",
+                expectedCommentText,
+                actualComment.getString("text"));
 
-    Document actualComment =
-        (Document)
-            commentsCollection()
-                .find(new Document("_id", new ObjectId(fakeCommentId)))
-                .first();
+        Assert.assertEquals("Commenter email should match the user email",
+                validEmail, actualComment.getString("email"));
+    }
 
-    Assert.assertEquals(
-        "Comment text should match. Check updateComment implementation",
-        expectedCommentText,
-        actualComment.getString("text"));
+    @Test
+    public void testUserFailsUpdateOthersComments() {
 
-    Assert.assertEquals("Commenter email should match the user email",
-            validEmail, actualComment.getString("email"));
-  }
+        Comment fakeComment = fakeCommentWithId();
+        dao.addComment(fakeComment);
+        String newCommentText = randomText(20);
 
-  @Test
-  public void testUserFailsUpdateOthersComments() {
+        Assert.assertTrue(
+                "Cannot update comments not owned by user",
+                !dao.updateComment(fakeComment.getId(), newCommentText, notValidEmail));
+    }
 
-    Comment fakeComment = fakeCommentWithId();
-    dao.addComment(fakeComment);
-    String newCommentText = randomText(20);
+    @Test(expected = IncorrectDaoOperation.class)
+    public void testUserAddCommentWithNoID() {
+        Comment actual = fakeCommentNoId();
+        dao.addComment(actual);
+    }
 
-    Assert.assertTrue(
-        "Cannot update comments not owned by user",
-        !dao.updateComment(fakeComment.getId(), newCommentText, notValidEmail));
-  }
+    @Test
+    public void testAddCommentWithId() {
+        Comment expectedComment = fakeCommentWithId();
+        Assert.assertNotNull(
+                "Comment should have been correctly added. Check your addComments method",
+                dao.addComment(expectedComment));
 
-  @Test(expected = IncorrectDaoOperation.class)
-  public void testUserAddCommentWithNoID() {
-    Comment actual = fakeCommentNoId();
-    dao.addComment(actual);
-  }
+        Document actualComment =
+                (Document) commentsCollection().find(Filters.eq("_id", expectedComment.getOid())).first();
 
-  @Test
-  public void testAddCommentWithId() {
-    Comment expectedComment = fakeCommentWithId();
-    Assert.assertNotNull(
-        "Comment should have been correctly added. Check your addComments method",
-        dao.addComment(expectedComment));
+        Assert.assertNotNull("Comment should be found. Check your addComment method", actualComment);
 
-    Document actualComment =
-        (Document) commentsCollection().find(Filters.eq("_id", expectedComment.getOid())).first();
+        Assert.assertEquals(
+                "Comment email not matching. Check your addComment method",
+                actualComment.getString("email"),
+                expectedComment.getEmail());
 
-    Assert.assertNotNull("Comment should be found. Check your addComment method", actualComment);
+        Assert.assertEquals(
+                "Comment text not matching. Check your addComment method",
+                actualComment.getString("text"),
+                expectedComment.getText());
 
-    Assert.assertEquals(
-        "Comment email not matching. Check your addComment method",
-        actualComment.getString("email"),
-        expectedComment.getEmail());
+        Assert.assertEquals(
+                "Comment date not matching. Check your addComment method",
+                actualComment.getDate("date"),
+                expectedComment.getDate());
+    }
 
-    Assert.assertEquals(
-        "Comment text not matching. Check your addComment method",
-        actualComment.getString("text"),
-        expectedComment.getText());
+    @Test
+    public void testAddCommentUsingObjectId() {
+        String id = "5a9427648b0beebeb69579cc";
+        Comment comment = dao.getComment(id);
 
-    Assert.assertEquals(
-        "Comment date not matching. Check your addComment method",
-        actualComment.getDate("date"),
-        expectedComment.getDate());
-  }
-
-  @Test
-  public void testAddCommentUsingObjectId() {
-    String id = "5a9427648b0beebeb69579cc";
-    Comment comment = dao.getComment(id);
-
-    Assert.assertNotNull(comment);
-  }
+        Assert.assertNotNull(comment);
+    }
 }
