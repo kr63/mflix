@@ -1,6 +1,7 @@
 package mflix.api.daos;
 
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoWriteException;
 import com.mongodb.ReadConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -26,8 +27,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -79,11 +79,13 @@ public class CommentDao extends AbstractMFlixDao {
     public Comment addComment(Comment comment) {
 
         if (comment.getId() == null) throw new IncorrectDaoOperation("Comment Id must be set");
-        commentCollection.insertOne(comment);
-        return comment;
 
-        // TODO> Ticket - Handling Errors: Implement a try catch block to
-        // handle a potential write exception when given a wrong commentId.
+        try {
+            commentCollection.insertOne(comment);
+        } catch (MongoWriteException e) {
+            log.error(e.getMessage());
+        }
+        return comment;
     }
 
     /**
@@ -107,11 +109,15 @@ public class CommentDao extends AbstractMFlixDao {
         Bson update = combine(
                 set("text", text),
                 set("date", new Date()));
-        UpdateResult result = commentCollection.updateOne(filter, update);
-        return result.getModifiedCount() > 0 && result.getMatchedCount() > 0;
 
-        // TODO> Ticket - Handling Errors: Implement a try catch block to
-        // handle a potential write exception when given a wrong commentId.
+        UpdateResult result = null;
+        try {
+            result = commentCollection.updateOne(filter, update);
+        } catch (MongoWriteException e) {
+            log.error(e.getMessage());
+        }
+        assert result != null;
+        return result.getModifiedCount() > 0 && result.getMatchedCount() > 0;
     }
 
     /**
@@ -122,15 +128,18 @@ public class CommentDao extends AbstractMFlixDao {
      * @return true if successful deletes the comment.
      */
     public boolean deleteComment(String commentId, String email) {
-        if (commentId.isEmpty()) {
-            throw new IllegalArgumentException("Comment id must be set");
-        }
-        Bson filter = and(eq("_id", new ObjectId(commentId)), eq("email", email));
-        DeleteResult result = commentCollection.deleteMany(filter);
-        return result.getDeletedCount() > 0;
 
-        // TODO> Ticket Handling Errors - Implement a try catch block to
-        // handle a potential write exception when given a wrong commentId.
+        if(!ObjectId.isValid(commentId)) throw new IllegalArgumentException("Comment id must be valid");
+
+        Bson filter = and(eq("_id", new ObjectId(commentId)), eq("email", email));
+        DeleteResult result = null;
+        try {
+            result = commentCollection.deleteMany(filter);
+        } catch (MongoWriteException e) {
+            log.error(e.getMessage());
+        }
+        assert result != null;
+        return result.getDeletedCount() > 0;
     }
 
     /**
