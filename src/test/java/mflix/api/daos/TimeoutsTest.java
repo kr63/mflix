@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(classes = {CommentDao.class, MongoDBConfiguration.class})
@@ -44,18 +45,18 @@ public class TimeoutsTest extends TicketTest {
         WriteConcern wc = this.movieDao.mongoClient.getDatabase("mflix").getWriteConcern();
 
         Assert.assertNotNull(wc);
-        int actual = wc.getWTimeout(TimeUnit.MILLISECONDS);
-        int expected = 2500;
-        Assert.assertEquals("Configured `wtimeout` not set has expected", expected, actual);
+        Integer expected = 2500;
+        Optional<Integer> actual = Optional.ofNullable(wc.getWTimeout(TimeUnit.MILLISECONDS));
+        Assert.assertEquals("Configured `wtimeout` not set has expected",
+                expected, actual.orElse(null));
     }
 
     @Test
     public void testConfiguredConnectionTimeoutMs() {
         ConnectionString connectionString = new ConnectionString(mongoUri);
-        int expected = 2000;
-        int actual = connectionString.getConnectTimeout();
-
-        Assert.assertEquals(
-                "Configured `connectionTimeoutMS` does not match expected", expected, actual);
+        Integer expected = 2000;
+        Optional<Integer> actual = Optional.ofNullable(connectionString.getConnectTimeout());
+        Assert.assertEquals("Configured `connectionTimeoutMS` does not match expected",
+                expected, actual.orElse(null));
     }
 }
