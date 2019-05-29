@@ -20,36 +20,36 @@ import java.util.stream.Collectors;
 @Component
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler
-  @ResponseBody
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public Map<String, List<String>> handle(MethodArgumentNotValidException exception) {
-    return Collections.singletonMap(
-        "error",
-        exception
-            .getBindingResult()
-            .getFieldErrors()
-            .stream()
-            .map(FieldError::getDefaultMessage)
-            .collect(Collectors.toList()));
-  }
+    @ExceptionHandler
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, List<String>> handle(MethodArgumentNotValidException exception) {
+        return Collections.singletonMap(
+                "error",
+                exception
+                        .getBindingResult()
+                        .getFieldErrors()
+                        .stream()
+                        .map(FieldError::getDefaultMessage)
+                        .collect(Collectors.toList()));
+    }
 
-  @ExceptionHandler
-  @ResponseBody
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  public Map<String, List<Map<String, Object>>> handle(ConstraintViolationException exception) {
-    return Collections.singletonMap(
-        "error",
-        exception
-            .getConstraintViolations()
-            .stream()
-            .map(
-                x -> {
-                  HashMap<String, Object> error = new HashMap<>();
-                  error.put("field", x.getPropertyPath().toString());
-                  error.put("error", x.getMessage());
-                  return error;
-                })
-            .collect(Collectors.toList()));
-  }
+    @ExceptionHandler
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, List<Map<String, Object>>> handle(ConstraintViolationException exception) {
+        return Collections.singletonMap(
+                "error",
+                exception
+                        .getConstraintViolations()
+                        .stream()
+                        .map(
+                                x -> {
+                                    HashMap<String, Object> error = new HashMap<>();
+                                    error.put("field", x.getPropertyPath().toString());
+                                    error.put("error", x.getMessage());
+                                    return error;
+                                })
+                        .collect(Collectors.toList()));
+    }
 }

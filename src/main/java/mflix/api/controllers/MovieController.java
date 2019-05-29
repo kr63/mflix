@@ -16,182 +16,183 @@ import java.util.*;
 @RequestMapping(path = "/api/v1/movies")
 public class MovieController extends ApiController {
 
-  @Autowired private MoviesService moviesService;
+    @Autowired
+    private MoviesService moviesService;
 
-  @Value("${api.movies.movies_per_page}")
-  private int MOVIES_PER_PAGE = 20;
+    @Value("${api.movies.movies_per_page}")
+    private int MOVIES_PER_PAGE = 20;
 
-  public MovieController() {
-    super();
-  }
-
-  private ResponseEntity<Map> buildOkResponse(Map<String, ?> moviesResults, int page, Map filters) {
-    return buildOkResponse(moviesResults, page, filters, "movies");
-  }
-
-  private ResponseEntity<Map> buildOkResponse(
-      Map<String, ?> moviesResults, int page, Map filters, String resultsKey) {
-
-    Map<String, Object> results = new HashMap<>();
-    results.put(resultsKey, moviesResults.get("movies_list"));
-    results.put("page", page);
-    results.put("entries_per_page", MOVIES_PER_PAGE);
-    if (moviesResults.containsKey("movies_count")) {
-      results.put("total_results", moviesResults.get("movies_count"));
+    public MovieController() {
+        super();
     }
 
-    results.put("filters", filters);
-
-    return ResponseEntity.ok(results);
-  }
-
-  @Override
-  ResponseEntity<Map> index() {
-    return buildOkResponse(moviesService.getMovies(MOVIES_PER_PAGE, 0), 0, Collections.emptyMap());
-  }
-
-  @GetMapping(value = "/id/{movieId}")
-  ResponseEntity getMovie(@PathVariable(value = "movieId") String movieId) {
-    HashMap<String, Object> result = new HashMap<>();
-    Movie movie = moviesService.getMovie(movieId);
-    if (movie == null) {
-      result.put("error", "Not found");
-      return ResponseEntity.badRequest().body(result);
+    private ResponseEntity<Map> buildOkResponse(Map<String, ?> moviesResults, int page, Map filters) {
+        return buildOkResponse(moviesResults, page, filters, "movies");
     }
 
-    result.put("movie", movie);
-    result.put("api", "java");
-    result.put("updated_type", moviesService.getMovieDocumentFieldType(movieId, "lastupdated"));
-    return ResponseEntity.ok(result);
-  }
+    private ResponseEntity<Map> buildOkResponse(
+            Map<String, ?> moviesResults, int page, Map filters, String resultsKey) {
 
-  @GetMapping(value = "/countries")
-  public ResponseEntity<Map> moviesByCountry(
-      @RequestParam(value = "countries") @Size(min = 1) ArrayList<String> countries) {
-    return buildOkResponse(
-        moviesService.getMoviesByCountry(countries.toArray(new String[0])),
-        0,
-        Collections.EMPTY_MAP,
-        "titles");
-  }
+        Map<String, Object> results = new HashMap<>();
+        results.put(resultsKey, moviesResults.get("movies_list"));
+        results.put("page", page);
+        results.put("entries_per_page", MOVIES_PER_PAGE);
+        if (moviesResults.containsKey("movies_count")) {
+            results.put("total_results", moviesResults.get("movies_count"));
+        }
 
-  @GetMapping(value = "/search")
-  public ResponseEntity<Map> search(
-      @RequestParam(value = "page", required = false, defaultValue = "0") @Min(0) Integer page,
-      @RequestParam(value = "text", required = false) ArrayList<String> text,
-      @RequestParam(value = "cast", required = false) ArrayList<String> cast,
-      @RequestParam(value = "genre", required = false) ArrayList<String> genre) {
+        results.put("filters", filters);
 
-    Map<String, List<String>> filters = new HashMap<>();
-    if (text != null) {
-      filters.put("text", text);
-      return buildOkResponse(
-          moviesService.getMoviesByText(MOVIES_PER_PAGE, page, text), page, filters);
+        return ResponseEntity.ok(results);
     }
 
-    if (cast != null) {
-      filters.put("cast", cast);
-      return buildOkResponse(
-          moviesService.getMoviesByCast(MOVIES_PER_PAGE, page, cast), page, filters);
+    @Override
+    ResponseEntity<Map> index() {
+        return buildOkResponse(moviesService.getMovies(MOVIES_PER_PAGE, 0), 0, Collections.emptyMap());
     }
 
-    if (genre != null) {
-      filters.put("genre", genre);
-      return buildOkResponse(
-          moviesService.getMoviesByGenre(MOVIES_PER_PAGE, page, genre), page, filters);
+    @GetMapping(value = "/id/{movieId}")
+    ResponseEntity getMovie(@PathVariable(value = "movieId") String movieId) {
+        HashMap<String, Object> result = new HashMap<>();
+        Movie movie = moviesService.getMovie(movieId);
+        if (movie == null) {
+            result.put("error", "Not found");
+            return ResponseEntity.badRequest().body(result);
+        }
+
+        result.put("movie", movie);
+        result.put("api", "java");
+        result.put("updated_type", moviesService.getMovieDocumentFieldType(movieId, "lastupdated"));
+        return ResponseEntity.ok(result);
     }
 
-    return index();
-  }
-
-  @RequestMapping(value = "/facet-search", method = RequestMethod.GET)
-  public ResponseEntity<Map> apiSearchMoviesFaceted(
-      @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
-      @RequestParam(value = "cast", required = false) @Size(min = 1) ArrayList<String> cast) {
-
-    Map<String, List<String>> filters = new HashMap<>();
-    filters.put("cast", cast);
-    Map<String, ?> results = moviesService.getMovieFacetedSearch(cast, page, MOVIES_PER_PAGE);
-
-    if (results.get("movies") == null) {
-      return ResponseEntity.notFound().build();
+    @GetMapping(value = "/countries")
+    public ResponseEntity<Map> moviesByCountry(
+            @RequestParam(value = "countries") @Size(min = 1) ArrayList<String> countries) {
+        return buildOkResponse(
+                moviesService.getMoviesByCountry(countries.toArray(new String[0])),
+                0,
+                Collections.EMPTY_MAP,
+                "titles");
     }
 
-    Map<String, Object> facets = new HashMap<>();
-    facets.put("runtime", results.get("runtime"));
-    facets.put("rating", results.get("rating"));
+    @GetMapping(value = "/search")
+    public ResponseEntity<Map> search(
+            @RequestParam(value = "page", required = false, defaultValue = "0") @Min(0) Integer page,
+            @RequestParam(value = "text", required = false) ArrayList<String> text,
+            @RequestParam(value = "cast", required = false) ArrayList<String> cast,
+            @RequestParam(value = "genre", required = false) ArrayList<String> genre) {
 
-    HashMap<String, Object> response = new HashMap<>();
-    response.put("movies", results.get("movies"));
-    response.put("facets", facets);
-    response.put("total_results", results.get("count"));
-    response.put("entries_per_page", MOVIES_PER_PAGE);
-    response.put("filters", filters);
-    response.put("page", page);
-    return ResponseEntity.ok(response);
-  }
+        Map<String, List<String>> filters = new HashMap<>();
+        if (text != null) {
+            filters.put("text", text);
+            return buildOkResponse(
+                    moviesService.getMoviesByText(MOVIES_PER_PAGE, page, text), page, filters);
+        }
 
-  @PutMapping(value = "/comment")
-  public ResponseEntity updateMovieComment(
-      @RequestHeader("Authorization") String authorizationToken,
-      @RequestBody HashMap<String, String> body) {
+        if (cast != null) {
+            filters.put("cast", cast);
+            return buildOkResponse(
+                    moviesService.getMoviesByCast(MOVIES_PER_PAGE, page, cast), page, filters);
+        }
 
-    Map<String, Object> results = new HashMap<>();
-    String email = getEmailFromRequest(authorizationToken);
-    if (email == null) {
-      results.put("error", "email not found");
-      return ResponseEntity.badRequest().body(results);
-    }
-    if (!moviesService.updateMovieComment(body, email, results)) {
-      return ResponseEntity.badRequest().body(results);
-    }
-    results.put("auth_token", tokenProvider.mintJWTHeader(email));
-    return ResponseEntity.ok(results);
-  }
+        if (genre != null) {
+            filters.put("genre", genre);
+            return buildOkResponse(
+                    moviesService.getMoviesByGenre(MOVIES_PER_PAGE, page, genre), page, filters);
+        }
 
-  @PostMapping(value = "/comment")
-  public ResponseEntity addComment(
-      @RequestHeader("Authorization") String authorizationToken,
-      @RequestBody HashMap<String, String> body) {
-    String email = getEmailFromRequest(authorizationToken);
-    HashMap<String, Object> results = new HashMap<>();
-
-    String movieID = body.get("movie_id");
-    String comment = body.get("comment");
-    if (!moviesService.addMovieComment(movieID, email, comment, results)) {
-      return ResponseEntity.badRequest().body(results);
+        return index();
     }
 
-    results.put("auth_token", tokenProvider.mintJWTHeader(email));
-    return ResponseEntity.ok(results);
-  }
+    @RequestMapping(value = "/facet-search", method = RequestMethod.GET)
+    public ResponseEntity<Map> apiSearchMoviesFaceted(
+            @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+            @RequestParam(value = "cast", required = false) @Size(min = 1) ArrayList<String> cast) {
 
-  @DeleteMapping(value = "/comment")
-  public ResponseEntity deleteComment(
-      @RequestHeader("Authorization") String authorizationToken,
-      @RequestBody HashMap<String, String> body) {
-    String email = getEmailFromRequest(authorizationToken);
-    Map<String, Object> results = new HashMap<>();
-    if (email == null) {
-      results.put("error", "email not found");
-      return ResponseEntity.badRequest().body(results);
+        Map<String, List<String>> filters = new HashMap<>();
+        filters.put("cast", cast);
+        Map<String, ?> results = moviesService.getMovieFacetedSearch(cast, page, MOVIES_PER_PAGE);
+
+        if (results.get("movies") == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> facets = new HashMap<>();
+        facets.put("runtime", results.get("runtime"));
+        facets.put("rating", results.get("rating"));
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("movies", results.get("movies"));
+        response.put("facets", facets);
+        response.put("total_results", results.get("count"));
+        response.put("entries_per_page", MOVIES_PER_PAGE);
+        response.put("filters", filters);
+        response.put("page", page);
+        return ResponseEntity.ok(response);
     }
 
-    String movie_id = body.get("movie_id");
-    String comment_id = body.get("comment_id");
-    if (!moviesService.deleteMovieComment(movie_id, email, comment_id, results)) {
-      return ResponseEntity.badRequest().body(results);
+    @PutMapping(value = "/comment")
+    public ResponseEntity updateMovieComment(
+            @RequestHeader("Authorization") String authorizationToken,
+            @RequestBody HashMap<String, String> body) {
+
+        Map<String, Object> results = new HashMap<>();
+        String email = getEmailFromRequest(authorizationToken);
+        if (email == null) {
+            results.put("error", "email not found");
+            return ResponseEntity.badRequest().body(results);
+        }
+        if (!moviesService.updateMovieComment(body, email, results)) {
+            return ResponseEntity.badRequest().body(results);
+        }
+        results.put("auth_token", tokenProvider.mintJWTHeader(email));
+        return ResponseEntity.ok(results);
     }
 
-    return ResponseEntity.ok(results);
-  }
+    @PostMapping(value = "/comment")
+    public ResponseEntity addComment(
+            @RequestHeader("Authorization") String authorizationToken,
+            @RequestBody HashMap<String, String> body) {
+        String email = getEmailFromRequest(authorizationToken);
+        HashMap<String, Object> results = new HashMap<>();
 
-  @GetMapping(value = "/config-options")
-  public ResponseEntity configOptions() {
-    Map<String, ?> results = moviesService.getConfiguration();
-    if (results.containsKey("error")) {
-      return ResponseEntity.badRequest().body(results);
+        String movieID = body.get("movie_id");
+        String comment = body.get("comment");
+        if (!moviesService.addMovieComment(movieID, email, comment, results)) {
+            return ResponseEntity.badRequest().body(results);
+        }
+
+        results.put("auth_token", tokenProvider.mintJWTHeader(email));
+        return ResponseEntity.ok(results);
     }
-    return ResponseEntity.ok(results);
-  }
+
+    @DeleteMapping(value = "/comment")
+    public ResponseEntity deleteComment(
+            @RequestHeader("Authorization") String authorizationToken,
+            @RequestBody HashMap<String, String> body) {
+        String email = getEmailFromRequest(authorizationToken);
+        Map<String, Object> results = new HashMap<>();
+        if (email == null) {
+            results.put("error", "email not found");
+            return ResponseEntity.badRequest().body(results);
+        }
+
+        String movie_id = body.get("movie_id");
+        String comment_id = body.get("comment_id");
+        if (!moviesService.deleteMovieComment(movie_id, email, comment_id, results)) {
+            return ResponseEntity.badRequest().body(results);
+        }
+
+        return ResponseEntity.ok(results);
+    }
+
+    @GetMapping(value = "/config-options")
+    public ResponseEntity configOptions() {
+        Map<String, ?> results = moviesService.getConfiguration();
+        if (results.containsKey("error")) {
+            return ResponseEntity.badRequest().body(results);
+        }
+        return ResponseEntity.ok(results);
+    }
 }

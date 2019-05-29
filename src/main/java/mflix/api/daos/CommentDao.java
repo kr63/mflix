@@ -27,7 +27,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -129,7 +130,7 @@ public class CommentDao extends AbstractMFlixDao {
      */
     public boolean deleteComment(String commentId, String email) {
 
-        if(!ObjectId.isValid(commentId)) throw new IllegalArgumentException("Comment id must be valid");
+        if (!ObjectId.isValid(commentId)) throw new IllegalArgumentException("Comment id must be valid");
 
         Bson filter = and(eq("_id", new ObjectId(commentId)), eq("email", email));
         DeleteResult result = null;

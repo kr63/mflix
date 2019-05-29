@@ -13,19 +13,19 @@ import java.io.IOException;
 
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
-  private TokenAuthenticationService authService;
+    private TokenAuthenticationService authService;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
-    Authentication authentication = authService.getAuthentication(request);
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        Authentication authentication = authService.getAuthentication(request);
 
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    filterChain.doFilter(request, response);
-  }
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        filterChain.doFilter(request, response);
+    }
 
-  public void setAuthService(TokenAuthenticationService authService) {
-    this.authService = authService;
-  }
+    public void setAuthService(TokenAuthenticationService authService) {
+        this.authService = authService;
+    }
 }

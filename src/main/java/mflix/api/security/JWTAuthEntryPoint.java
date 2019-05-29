@@ -13,16 +13,16 @@ import java.io.IOException;
 @Component
 public class JWTAuthEntryPoint implements AuthenticationEntryPoint {
 
-  private static final Logger log = LoggerFactory.getLogger(JWTAuthEntryPoint.class);
+    private static final Logger log = LoggerFactory.getLogger(JWTAuthEntryPoint.class);
 
-  @Override
-  public void commence(
-      HttpServletRequest httpServletRequest,
-      HttpServletResponse httpServletResponse,
-      AuthenticationException e)
-      throws IOException {
-    log.error("Unauthorized error: {}", e.getMessage());
-    httpServletResponse.sendError(
-        HttpServletResponse.SC_UNAUTHORIZED, "Not authorized to access this resource.");
-  }
+    @Override
+    public void commence(
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse,
+            AuthenticationException e)
+            throws IOException {
+        log.error("Unauthorized error: {}", e.getMessage());
+        httpServletResponse.sendError(
+                HttpServletResponse.SC_UNAUTHORIZED, "Not authorized to access this resource.");
+    }
 }

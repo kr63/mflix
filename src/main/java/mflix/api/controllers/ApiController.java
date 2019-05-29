@@ -17,23 +17,24 @@ import java.util.Map;
 @ComponentScan({"config", "entity", "security"})
 public abstract class ApiController {
 
-  @Autowired protected TokenAuthenticationService tokenProvider;
+    @Autowired
+    protected TokenAuthenticationService tokenProvider;
 
-  @ResponseBody
-  @GetMapping(value = "info")
-  public ResponseEntity<Map> info() {
+    @ResponseBody
+    @GetMapping(value = "info")
+    public ResponseEntity<Map> info() {
 
-    Map<String, String> responseMap = new HashMap<>();
-    responseMap.put("message", "hello from MFlix API");
+        Map<String, String> responseMap = new HashMap<>();
+        responseMap.put("message", "hello from MFlix API");
 
-    return ResponseEntity.ok(responseMap);
-  }
+        return ResponseEntity.ok(responseMap);
+    }
 
-  protected String getEmailFromRequest(String request) {
-    String jwt = request.substring(7);
-    return tokenProvider.getAuthenticationUser(jwt);
-  }
+    protected String getEmailFromRequest(String request) {
+        String jwt = request.substring(7);
+        return tokenProvider.getAuthenticationUser(jwt);
+    }
 
-  @GetMapping(value = "/")
-  abstract ResponseEntity<Map> index();
+    @GetMapping(value = "/")
+    abstract ResponseEntity<Map> index();
 }

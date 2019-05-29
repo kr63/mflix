@@ -4,27 +4,27 @@ import java.util.Date;
 
 public class RottenTomatoes {
 
-  private Date lastUpdated;
+    private Date lastUpdated;
 
-  private ViewerRating viewer;
+    private ViewerRating viewer;
 
-  public RottenTomatoes() {
-    super();
-  }
+    public RottenTomatoes() {
+        super();
+    }
 
-  public Date getLastUpdated() {
-    return lastUpdated;
-  }
+    public Date getLastUpdated() {
+        return lastUpdated;
+    }
 
-  public void setLastUpdated(Date lastUpdated) {
-    this.lastUpdated = lastUpdated;
-  }
+    public void setLastUpdated(Date lastUpdated) {
+        this.lastUpdated = lastUpdated;
+    }
 
-  public ViewerRating getViewer() {
-    return viewer;
-  }
+    public ViewerRating getViewer() {
+        return viewer;
+    }
 
-  public void setViewer(ViewerRating viewer) {
-    this.viewer = viewer;
-  }
+    public void setViewer(ViewerRating viewer) {
+        this.viewer = viewer;
+    }
 }
